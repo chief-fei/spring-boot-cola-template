@@ -1,0 +1,146 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: __PROJECT_NAME__
+  main:
+    allow-bean-definition-overriding: true
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
+        enabled: false
+      config:
+        server-addr: 127.0.0.1:8848
+        enabled: false
+        file-extension: yaml
+
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/demo?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: root
+    druid:
+      initial-size: 5
+      min-idle: 5
+      max-active: 20
+      max-wait: 60000
+      time-between-eviction-runs-millis: 60000
+      min-evictable-idle-time-millis: 300000
+      validation-query: SELECT 1
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+      pool-prepared-statements: true
+      max-pool-prepared-statement-per-connection-size: 20
+      filters: stat,wall
+      stat-view-servlet:
+        enabled: true
+        url-pattern: /druid/*
+        login-username: admin
+        login-password: admin
+      web-stat-filter:
+        enabled: true
+        url-pattern: /*
+        exclusions: '*.js,*.gif,*.jpg,*.png,*.css,*.ico,/druid/*'
+
+  redis:
+    host: 127.0.0.1
+    port: 6379
+    password:
+    database: 0
+    timeout: 10000
+    lettuce:
+      pool:
+        max-active: 16
+        max-idle: 8
+        min-idle: 2
+        max-wait: 3000
+
+  elasticsearch:
+    uris: 127.0.0.1:9200
+
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  type-aliases-package: __PACKAGE_NAME__.infrastructure
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+      table-prefix: t_
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: false
+    # log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+dubbo:
+  application:
+    name: __PROJECT_NAME__
+  protocol:
+    name: dubbo
+    port: -1
+  registry:
+    address: nacos://127.0.0.1:8848
+    parameters:
+      namespace: public
+  consumer:
+    timeout: 5000
+    check: false
+  provider:
+    timeout: 5000
+
+rocketmq:
+  name-server: 127.0.0.1:9876
+  producer:
+    group: ${spring.application.name}-producer
+    send-message-timeout: 3000
+    retry-times-when-send-failed: 3
+    retry-times-when-send-async-failed: 3
+
+xxl:
+  job:
+    admin:
+      addresses: http://127.0.0.1:8080/xxl-job-admin
+    accessToken:
+    executor:
+      appname: __PROJECT_NAME__
+      address:
+      ip:
+      port: 9999
+      logpath:
+      logretentiondays: 30
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  info:
+    title: __PROJECT_NAME__ API
+    version: 1.0.0
+    description: __PROJECT_NAME__ API Documentation
+
+app:
+  custom:
+    name: __PROJECT_NAME__
+    version: 1.0.0
+    debug-enabled: true
+    max-retry-count: 3
+    upload:
+      path: /tmp/uploads
+      max-size: 10485760
+      allowed-types: jpg,png,pdf,xlsx
+
+logging:
+  level:
+    root: INFO
+    __PACKAGE_NAME__: DEBUG
+  config: classpath:logback-spring.xml
