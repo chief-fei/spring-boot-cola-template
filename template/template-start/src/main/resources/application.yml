@@ -18,6 +18,7 @@ spring:
         enabled: false
         file-extension: yaml
 
+  # @cfg mybatis-plus
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -47,7 +48,9 @@ spring:
         enabled: true
         url-pattern: /*
         exclusions: '*.js,*.gif,*.jpg,*.png,*.css,*.ico,/druid/*'
+  # @endcfg
 
+  # @cfg redis
   redis:
     host: 127.0.0.1
     port: 6379
@@ -60,10 +63,14 @@ spring:
         max-idle: 8
         min-idle: 2
         max-wait: 3000
+  # @endcfg
 
+  # @cfg elasticsearch
   elasticsearch:
     uris: 127.0.0.1:9200
+  # @endcfg
 
+# @cfg mybatis-plus
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml
   type-aliases-package: __PACKAGE_NAME__.infrastructure
@@ -78,7 +85,9 @@ mybatis-plus:
     map-underscore-to-camel-case: true
     cache-enabled: false
     # log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+# @endcfg
 
+# @cfg dubbo
 dubbo:
   application:
     name: __PROJECT_NAME__
@@ -94,7 +103,9 @@ dubbo:
     check: false
   provider:
     timeout: 5000
+# @endcfg
 
+# @cfg rocketmq
 rocketmq:
   name-server: 127.0.0.1:9876
   producer:
@@ -102,7 +113,9 @@ rocketmq:
     send-message-timeout: 3000
     retry-times-when-send-failed: 3
     retry-times-when-send-async-failed: 3
+# @endcfg
 
+# @cfg xxl-job
 xxl:
   job:
     admin:
@@ -115,7 +128,9 @@ xxl:
       port: 9999
       logpath:
       logretentiondays: 30
+# @endcfg
 
+# @cfg springdoc
 springdoc:
   api-docs:
     path: /v3/api-docs
@@ -127,6 +142,7 @@ springdoc:
     title: __PROJECT_NAME__ API
     version: 1.0.0
     description: __PROJECT_NAME__ API Documentation
+# @endcfg
 
 app:
   custom:
