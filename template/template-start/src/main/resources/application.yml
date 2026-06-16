@@ -138,11 +138,12 @@ springdoc:
     path: /swagger-ui.html
     tags-sorter: alpha
     operations-sorter: alpha
-  info:
-    title: __PROJECT_NAME__ API
-    version: 1.0.0
-    description: __PROJECT_NAME__ API Documentation
 # @endcfg
+
+info:
+  title: __PROJECT_NAME__ API
+  version: 1.0.0
+  description: __PROJECT_NAME__ API Documentation
 
 app:
   custom:
@@ -159,4 +160,3 @@ logging:
   level:
     root: INFO
     __PACKAGE_NAME__: DEBUG
-  config: classpath:logback-spring.xml

@@ -4,12 +4,14 @@ import com.baomidou.mybatisplus.generator.FastAutoGenerator;
 import com.baomidou.mybatisplus.generator.config.OutputFile;
 import com.baomidou.mybatisplus.generator.config.TemplateType;
 import com.baomidou.mybatisplus.generator.engine.FreemarkerTemplateEngine;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.yaml.snakeyaml.Yaml;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.env.Environment;
+import org.springframework.stereotype.Component;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
@@ -20,28 +22,36 @@ import java.util.Map;
 import java.util.Scanner;
 
 @Slf4j
-public class CodeGenerator {
+@Component
+@RequiredArgsConstructor
+public class CodeGenerator implements CommandLineRunner {
 
-    private static final String AUTHOR = "generator";
-    private static final boolean FILE_OVERRIDE = false;
-    private static final String[] TABLE_PREFIXES = {"t_", "tbl_"};
+    private final GeneratorProperties props;
 
-    private static final String PROJECT_ROOT = findProjectRoot();
-    private static final String PROJECT_NAME = loadProjectName();
+    @Autowired
+    private Environment env;
 
-    private static final String INFRA_JAVA = PROJECT_ROOT + "/" + PROJECT_NAME + "-infrastructure/src/main/java";
-    private static final String INFRA_RES = PROJECT_ROOT + "/" + PROJECT_NAME + "-infrastructure/src/main/resources";
-    private static final String APP_JAVA = PROJECT_ROOT + "/" + PROJECT_NAME + "-app/src/main/java";
+    @Override
+    public void run(String... args) throws Exception {
+        String url = env.getProperty("spring.datasource.url");
+        String username = env.getProperty("spring.datasource.username");
+        String projectName = env.getProperty("spring.application.name", "app");
 
-    public static void main(String[] args) {
-        Map<String, Object> dbConfig = loadDbConfig();
-        String url = (String) dbConfig.get("url");
-        String username = (String) dbConfig.get("username");
+        if (url == null || username == null) {
+            throw new IllegalStateException(
+                    "Cannot find spring.datasource.url/username. " +
+                    "Run with: --spring.config.import=file:../{project}-start/src/main/resources/application.yml");
+        }
+
+        String projectRoot = findProjectRoot();
+        String infraJava = projectRoot + "/" + projectName + "-infrastructure/src/main/java";
+        String infraRes = projectRoot + "/" + projectName + "-infrastructure/src/main/resources";
+        String appJava = projectRoot + "/" + projectName + "-app/src/main/java";
 
         System.out.println("========================================");
         System.out.println("  DB URL:      " + url);
         System.out.println("  DB Username: " + username);
-        System.out.println("  Project:     " + PROJECT_NAME);
+        System.out.println("  Project:     " + projectName);
         System.out.println("========================================");
 
         String password = readPassword();
@@ -52,23 +62,26 @@ public class CodeGenerator {
             return;
         }
 
-        generateInfrastructure(url, username, password, table);
-        generateApp(url, username, password, table);
+        generateInfrastructure(url, username, password, table, projectName, infraJava, infraRes);
+        generateApp(url, username, password, table, projectName, appJava);
     }
 
-    private static void generateInfrastructure(String url, String username, String password, String table) {
+    private void generateInfrastructure(String url, String username, String password,
+                                        String table, String projectName,
+                                        String infraJava, String infraRes) {
         String tablePkg = toPackageName(table);
-        String basePackage = loadBasePackage();
+        String basePackage = props.getBasePackage();
 
         Map<OutputFile, String> pathInfo = new HashMap<>();
-        pathInfo.put(OutputFile.xml, INFRA_RES + "/" + basePackage.replace('.', '/') + "/infrastructure/" + tablePkg + "/mapper");
+        pathInfo.put(OutputFile.xml, infraRes + "/" + basePackage.replace('.', '/')
+                + "/infrastructure/" + tablePkg + "/mapper");
 
-        mkdirs(INFRA_JAVA, INFRA_RES);
+        mkdirs(infraJava, infraRes);
 
         FastAutoGenerator.create(url, username, password)
                 .globalConfig(builder -> builder
-                        .author(AUTHOR)
-                        .outputDir(INFRA_JAVA)
+                        .author(props.getAuthor())
+                        .outputDir(infraJava)
                         .disableOpenDir()
                         .commentDate("yyyy-MM-dd")
                 )
@@ -80,7 +93,7 @@ public class CodeGenerator {
                 )
                 .strategyConfig(builder -> {
                     builder.addInclude(table);
-                    builder.addTablePrefix(TABLE_PREFIXES);
+                    builder.addTablePrefix(props.getTablePrefixes());
                     builder.entityBuilder()
                             .enableLombok()
                             .enableChainModel()
@@ -91,7 +104,7 @@ public class CodeGenerator {
                             .enableBaseColumnList();
                     builder.serviceBuilder().disable();
                     builder.controllerBuilder().disable();
-                    if (FILE_OVERRIDE) {
+                    if (props.isFileOverride()) {
                         builder.entityBuilder().enableFileOverride();
                         builder.mapperBuilder().enableFileOverride();
                     }
@@ -99,22 +112,23 @@ public class CodeGenerator {
                 .templateEngine(new FreemarkerTemplateEngine())
                 .execute();
 
-        log.info("[{}-infrastructure] Generated", PROJECT_NAME);
-        log.info("  Entity -> {}/{}/infrastructure/{}/entity/", INFRA_JAVA, basePackage.replace('.', '/'), tablePkg);
-        log.info("  Mapper -> {}/{}/infrastructure/{}/mapper/", INFRA_JAVA, basePackage.replace('.', '/'), tablePkg);
-        log.info("  XML    -> {}/{}/infrastructure/{}/mapper/", INFRA_RES, basePackage.replace('.', '/'), tablePkg);
+        log.info("[{}-infrastructure] Generated", projectName);
+        log.info("  Entity -> {}/{}/infrastructure/{}/entity/", infraJava, basePackage.replace('.', '/'), tablePkg);
+        log.info("  Mapper -> {}/{}/infrastructure/{}/mapper/", infraJava, basePackage.replace('.', '/'), tablePkg);
+        log.info("  XML    -> {}/{}/infrastructure/{}/mapper/", infraRes, basePackage.replace('.', '/'), tablePkg);
     }
 
-    private static void generateApp(String url, String username, String password, String table) {
+    private void generateApp(String url, String username, String password,
+                             String table, String projectName, String appJava) {
         String tablePkg = toPackageName(table);
-        String basePackage = loadBasePackage();
+        String basePackage = props.getBasePackage();
 
-        mkdirs(APP_JAVA);
+        mkdirs(appJava);
 
         FastAutoGenerator.create(url, username, password)
                 .globalConfig(builder -> builder
-                        .author(AUTHOR)
-                        .outputDir(APP_JAVA)
+                        .author(props.getAuthor())
+                        .outputDir(appJava)
                         .disableOpenDir()
                         .commentDate("yyyy-MM-dd")
                 )
@@ -127,12 +141,12 @@ public class CodeGenerator {
                 )
                 .strategyConfig(builder -> {
                     builder.addInclude(table);
-                    builder.addTablePrefix(TABLE_PREFIXES);
+                    builder.addTablePrefix(props.getTablePrefixes());
                     builder.serviceBuilder()
                             .formatServiceFileName("I%sService");
                     builder.mapperBuilder().disable();
                     builder.controllerBuilder().disable();
-                    if (FILE_OVERRIDE) {
+                    if (props.isFileOverride()) {
                         builder.serviceBuilder().enableFileOverride();
                     }
                 })
@@ -142,14 +156,14 @@ public class CodeGenerator {
                 .templateEngine(new FreemarkerTemplateEngine())
                 .execute();
 
-        deleteQuietly(new File(APP_JAVA + "/" + basePackage.replace('.', '/') + "/infrastructure"));
+        deleteQuietly(new File(appJava + "/" + basePackage.replace('.', '/') + "/infrastructure"));
 
-        log.info("[{}-app] Generated", PROJECT_NAME);
-        log.info("  IService    -> {}/{}/app/{}/", APP_JAVA, basePackage.replace('.', '/'), tablePkg);
-        log.info("  ServiceImpl -> {}/{}/app/{}/impl/", APP_JAVA, basePackage.replace('.', '/'), tablePkg);
+        log.info("[{}-app] Generated", projectName);
+        log.info("  IService    -> {}/{}/app/{}/", appJava, basePackage.replace('.', '/'), tablePkg);
+        log.info("  ServiceImpl -> {}/{}/app/{}/impl/", appJava, basePackage.replace('.', '/'), tablePkg);
     }
 
-    public static void listTables(String url, String username, String password) {
+    private void listTables(String url, String username, String password) {
         System.out.println("====== Database Tables ======");
         try (Connection conn = DriverManager.getConnection(url, username, password);
              ResultSet rs = conn.getMetaData().getTables(conn.getCatalog(), null, "%", new String[]{"TABLE"})) {
@@ -162,7 +176,7 @@ public class CodeGenerator {
         System.out.println("=============================");
     }
 
-    private static String findProjectRoot() {
+    private String findProjectRoot() {
         Path current = Paths.get(System.getProperty("user.dir")).toAbsolutePath();
         while (current != null) {
             File[] dirs = current.toFile().listFiles(File::isDirectory);
@@ -179,90 +193,7 @@ public class CodeGenerator {
                 "Cannot find project root. Run from generator module or project root (need *-infrastructure subdirectory)");
     }
 
-    private static String loadProjectName() {
-        Map<String, Object> config = loadYamlConfig();
-        Object name = getNestedValue(config, "spring", "application", "name");
-        if (name != null) {
-            return name.toString();
-        }
-        File[] dirs = new File(System.getProperty("user.dir")).getParentFile().listFiles(File::isDirectory);
-        if (dirs != null) {
-            for (File dir : dirs) {
-                if (dir.getName().endsWith("-infrastructure")) {
-                    return dir.getName().replace("-infrastructure", "");
-                }
-            }
-        }
-        throw new IllegalStateException("Cannot determine project name from application.yml or directory structure");
-    }
-
-    @SuppressWarnings("unchecked")
-    private static Map<String, Object> loadDbConfig() {
-        Map<String, Object> config = loadYamlConfig();
-        Map<String, Object> result = new HashMap<>();
-
-        Object url = getNestedValue(config, "spring", "datasource", "url");
-        Object username = getNestedValue(config, "spring", "datasource", "username");
-
-        if (url == null || username == null) {
-            throw new IllegalStateException("Cannot find spring.datasource.url/username in application.yml");
-        }
-
-        result.put("url", url.toString());
-        result.put("username", username.toString());
-        return result;
-    }
-
-    @SuppressWarnings("unchecked")
-    private static String loadBasePackage() {
-        Map<String, Object> config = loadYamlConfig();
-        Object pkg = getNestedValue(config, "mybatis-plus", "type-aliases-package");
-        if (pkg != null) {
-            String fullPkg = pkg.toString();
-            int idx = fullPkg.indexOf(".infrastructure.");
-            if (idx > 0) {
-                return fullPkg.substring(0, idx);
-            }
-        }
-        throw new IllegalStateException("Cannot determine base package from mybatis-plus.type-aliases-package in application.yml");
-    }
-
-    @SuppressWarnings("unchecked")
-    private static Map<String, Object> loadYamlConfig() {
-        String[] searchPaths = {
-                PROJECT_ROOT + "/" + PROJECT_NAME + "-start/src/main/resources/application.yml",
-                PROJECT_ROOT + "/" + PROJECT_NAME + "-start/src/main/resources/application.yaml",
-        };
-
-        for (String path : searchPaths) {
-            File file = new File(path);
-            if (file.exists()) {
-                try (InputStream is = new FileInputStream(file)) {
-                    Yaml yaml = new Yaml();
-                    Map<String, Object> result = yaml.load(is);
-                    return result != null ? result : new HashMap<>();
-                } catch (Exception e) {
-                    throw new RuntimeException("Failed to parse " + path, e);
-                }
-            }
-        }
-        throw new IllegalStateException("application.yml not found in " + PROJECT_NAME + "-start module");
-    }
-
-    @SuppressWarnings("unchecked")
-    private static Object getNestedValue(Map<String, Object> map, String... keys) {
-        Object current = map;
-        for (String key : keys) {
-            if (current instanceof Map) {
-                current = ((Map<String, Object>) current).get(key);
-            } else {
-                return null;
-            }
-        }
-        return current;
-    }
-
-    private static String readPassword() {
+    private String readPassword() {
         if (System.console() != null) {
             return new String(System.console().readPassword("Enter database password: "));
         }
@@ -270,25 +201,23 @@ public class CodeGenerator {
         return new Scanner(System.in).nextLine();
     }
 
-    private static String readTableName() {
+    private String readTableName() {
         System.out.print("Enter table name: ");
         return new Scanner(System.in).nextLine().trim();
     }
 
-    private static String toPackageName(String tableName) {
+    private String toPackageName(String tableName) {
         return tableName.toLowerCase().replace("_", "");
     }
 
-    private static void mkdirs(String... paths) {
+    private void mkdirs(String... paths) {
         for (String path : paths) {
             new File(path).mkdirs();
         }
     }
 
-    private static void deleteQuietly(File file) {
-        if (!file.exists()) {
-            return;
-        }
+    private void deleteQuietly(File file) {
+        if (!file.exists()) return;
         if (file.isDirectory()) {
             File[] children = file.listFiles();
             if (children != null) {

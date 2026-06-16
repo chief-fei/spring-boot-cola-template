@@ -1,0 +1,6 @@
+spring:
+  main:
+    web-application-type: none
+
+generator:
+  base-package: __PACKAGE_NAME__
