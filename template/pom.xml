@@ -11,25 +11,37 @@
     <name>__PROJECT_NAME__</name>
 
     <properties>
-        <java.version>1.8</java.version>
+        <java.version>__JAVA_VERSION__</java.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <spring-boot.version>2.7.18</spring-boot.version>
+        <spring-boot.version>__BOOT_VERSION__</spring-boot.version>
         <spring-cloud.version>2021.0.5</spring-cloud.version>
         <spring-cloud-alibaba.version>2021.0.6.0</spring-cloud-alibaba.version>
 
         <cola.version>4.3.2</cola.version>
+        <!-- @dep mybatis-plus -->
         <mybatis-plus.version>3.5.7</mybatis-plus.version>
         <druid.version>1.2.23</druid.version>
         <mysql.version>8.0.33</mysql.version>
+        <!-- @enddep -->
+        <!-- @dep dubbo -->
         <dubbo.version>3.2.14</dubbo.version>
+        <!-- @enddep -->
+        <!-- @dep rocketmq -->
         <rocketmq.version>2.3.0</rocketmq.version>
+        <!-- @enddep -->
+        <!-- @dep xxl-job -->
         <xxl-job.version>2.4.1</xxl-job.version>
+        <!-- @enddep -->
+        <!-- @dep easyexcel -->
         <easyexcel.version>3.3.4</easyexcel.version>
+        <!-- @enddep -->
         <hutool.version>5.8.29</hutool.version>
+        <!-- @dep springdoc -->
         <springdoc.version>1.8.0</springdoc.version>
+        <!-- @enddep -->
         <mapstruct.version>1.5.5.Final</mapstruct.version>
     </properties>
 
@@ -83,6 +95,7 @@
                 <version>${cola.version}</version>
             </dependency>
 
+            <!-- @dep mybatis-plus -->
             <dependency>
                 <groupId>com.baomidou</groupId>
                 <artifactId>mybatis-plus-boot-starter</artifactId>
@@ -98,7 +111,9 @@
                 <artifactId>mysql-connector-j</artifactId>
                 <version>${mysql.version}</version>
             </dependency>
+            <!-- @enddep -->
 
+            <!-- @dep dubbo -->
             <dependency>
                 <groupId>org.apache.dubbo</groupId>
                 <artifactId>dubbo-spring-boot-starter</artifactId>
@@ -109,24 +124,31 @@
                 <artifactId>dubbo-registry-nacos</artifactId>
                 <version>${dubbo.version}</version>
             </dependency>
+            <!-- @enddep -->
 
+            <!-- @dep rocketmq -->
             <dependency>
                 <groupId>org.apache.rocketmq</groupId>
                 <artifactId>rocketmq-spring-boot-starter</artifactId>
                 <version>${rocketmq.version}</version>
             </dependency>
+            <!-- @enddep -->
 
+            <!-- @dep xxl-job -->
             <dependency>
                 <groupId>com.xuxueli</groupId>
                 <artifactId>xxl-job-core</artifactId>
                 <version>${xxl-job.version}</version>
             </dependency>
+            <!-- @enddep -->
 
+            <!-- @dep easyexcel -->
             <dependency>
                 <groupId>com.alibaba</groupId>
                 <artifactId>easyexcel</artifactId>
                 <version>${easyexcel.version}</version>
             </dependency>
+            <!-- @enddep -->
 
             <dependency>
                 <groupId>cn.hutool</groupId>
@@ -134,11 +156,13 @@
                 <version>${hutool.version}</version>
             </dependency>
 
+            <!-- @dep springdoc -->
             <dependency>
                 <groupId>org.springdoc</groupId>
                 <artifactId>springdoc-openapi-ui</artifactId>
                 <version>${springdoc.version}</version>
             </dependency>
+            <!-- @enddep -->
 
             <dependency>
                 <groupId>org.mapstruct</groupId>
