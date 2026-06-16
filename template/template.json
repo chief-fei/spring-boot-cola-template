@@ -2,23 +2,75 @@
   "name": "cola-spring-boot",
   "version": "1.0.0",
   "modules": {
-    "adapter": { "description": "Web层/Controller", "default": true, "required": false },
-    "app": { "description": "应用服务层", "default": true, "required": true },
-    "client": { "description": "客户端DTO/接口", "default": true, "required": true },
-    "domain": { "description": "领域层", "default": true, "required": true },
-    "infrastructure": { "description": "基础设施层", "default": true, "required": true },
-    "start": { "description": "启动模块", "default": true, "required": true },
-    "generator": { "description": "代码生成器", "default": false, "required": false }
+    "adapter": {
+      "description": "Web层/Controller",
+      "default": true,
+      "required": false
+    },
+    "app": {
+      "description": "应用服务层",
+      "default": true,
+      "required": true
+    },
+    "client": {
+      "description": "客户端DTO/接口",
+      "default": true,
+      "required": true
+    },
+    "domain": {
+      "description": "领域层",
+      "default": true,
+      "required": true
+    },
+    "infrastructure": {
+      "description": "基础设施层",
+      "default": true,
+      "required": true
+    },
+    "start": {
+      "description": "启动模块",
+      "default": true,
+      "required": true
+    },
+    "generator": {
+      "description": "代码生成器",
+      "default": false,
+      "required": false
+    }
   },
   "dependencies": {
-    "mybatis-plus": { "description": "MyBatis-Plus + Druid + MySQL", "default": true },
-    "redis": { "description": "Redis 缓存", "default": true },
-    "elasticsearch": { "description": "Elasticsearch 搜索引擎", "default": false },
-    "dubbo": { "description": "Apache Dubbo RPC", "default": false },
-    "rocketmq": { "description": "RocketMQ 消息队列", "default": false },
-    "xxl-job": { "description": "XXL-Job 任务调度", "default": false },
-    "easyexcel": { "description": "EasyExcel 表格处理", "default": false },
-    "springdoc": { "description": "SpringDoc OpenAPI 文档", "default": true }
+    "mybatis-plus": {
+      "description": "MyBatis-Plus + Druid + MySQL",
+      "default": true
+    },
+    "redis": {
+      "description": "Redis 缓存",
+      "default": true
+    },
+    "elasticsearch": {
+      "description": "Elasticsearch 搜索引擎",
+      "default": false
+    },
+    "dubbo": {
+      "description": "Apache Dubbo RPC",
+      "default": false
+    },
+    "rocketmq": {
+      "description": "RocketMQ 消息队列",
+      "default": false
+    },
+    "xxl-job": {
+      "description": "XXL-Job 任务调度",
+      "default": false
+    },
+    "easyexcel": {
+      "description": "EasyExcel 表格处理",
+      "default": false
+    },
+    "springdoc": {
+      "description": "SpringDoc OpenAPI 文档",
+      "default": true
+    }
   },
   "fileMapping": {
     "RedisConfig.java": "redis",
