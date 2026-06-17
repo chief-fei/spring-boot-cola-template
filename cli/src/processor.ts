@@ -1,19 +1,54 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { ProjectConfig } from "./prompts.js";
+import type { TemplateMeta } from "./downloader.js";
 import { walkDir, rmDir, ensureDir } from "./utils.js";
 
-const DEP_TAG_RE = /<!--\s*@dep\s+([\w-]+)\s*-->([\s\S]*?)<!--\s*@enddep\s*-->/g;
+const DEP_TAG_RE = /<!--\s*@dep\s+([\w-]+(?:\s*,\s*[\w-]+)*)\s*-->([\s\S]*?)<!--\s*@enddep\s*-->/g;
 const CFG_TAG_RE = /#\s*@cfg\s+([\w-]+)\s*([\s\S]*?)#\s*@endcfg/g;
 
-export function processTemplate(templateDir: string, config: ProjectConfig): void {
+export function processTemplate(templateDir: string, config: ProjectConfig, meta: TemplateMeta): void {
+  renamePlaceholderFiles(templateDir, config);
   removeUnselectedModules(templateDir, config);
   renameModuleDirectories(templateDir, config);
   processTags(templateDir, config);
-  removeUnselectedFiles(templateDir, config);
+  removeUnselectedFiles(templateDir, config, meta);
   replacePlaceholders(templateDir, config);
   restructurePackagePaths(templateDir, config);
   regenerateModulesSection(templateDir, config);
+  cleanEmptyLines(templateDir);
+}
+
+function cleanEmptyLines(templateDir: string): void {
+  walkDir(templateDir, (filePath) => {
+    const ext = path.extname(filePath);
+    if (![".xml", ".yml", ".yaml", ".properties", ".java"].includes(ext)) return;
+
+    const content = fs.readFileSync(filePath, "utf-8");
+    const cleaned = content
+      .replace(/^[ \t]+$/gm, "")
+      .replace(/\n{3,}/g, "\n\n");
+    if (cleaned !== content) {
+      fs.writeFileSync(filePath, cleaned, "utf-8");
+    }
+  });
+}
+
+function renamePlaceholderFiles(templateDir: string, config: ProjectConfig): void {
+  walkDir(templateDir, (filePath) => {
+    const dir = path.dirname(filePath);
+    const name = path.basename(filePath);
+    if (name.includes("__")) {
+      const newName = name
+        .replace(/__ARTIFACT_ID__/g, config.artifactId)
+        .replace(/__GROUP_ID__/g, config.groupId)
+        .replace(/__PROJECT_NAME__/g, config.projectName)
+        .replace(/__PACKAGE_NAME__/g, config.packageName);
+      if (newName !== name) {
+        fs.renameSync(filePath, path.join(dir, newName));
+      }
+    }
+  });
 }
 
 function removeUnselectedModules(templateDir: string, config: ProjectConfig): void {
@@ -47,9 +82,10 @@ function processTags(templateDir: string, config: ProjectConfig): void {
     let changed = false;
 
     if (ext === ".xml" || ext === ".java") {
-      const newContent = content.replace(DEP_TAG_RE, (_match, id: string, body: string) => {
+      const newContent = content.replace(DEP_TAG_RE, (_match, ids: string, body: string) => {
         changed = true;
-        if (config.dependencies.includes(id)) {
+        const idList = ids.split(",").map((s) => s.trim());
+        if (idList.some((id) => config.dependencies.includes(id))) {
           return body.trim();
         }
         return "";
@@ -78,20 +114,32 @@ function processTags(templateDir: string, config: ProjectConfig): void {
   });
 }
 
-const FILE_DEPENDENCY_MAP: Record<string, string> = {
-  "RedisConfig.java": "redis",
-  "ElasticsearchConfig.java": "elasticsearch",
-  "XxlJobConfig.java": "xxl-job",
-};
-
-function removeUnselectedFiles(templateDir: string, config: ProjectConfig): void {
+function removeUnselectedFiles(templateDir: string, config: ProjectConfig, meta: TemplateMeta): void {
   walkDir(templateDir, (filePath) => {
     const fileName = path.basename(filePath);
-    const depId = FILE_DEPENDENCY_MAP[fileName];
+    const depId = meta.fileMapping[fileName];
     if (depId && !config.dependencies.includes(depId)) {
       fs.unlinkSync(filePath);
     }
   });
+}
+
+function resolveSpringCloudVersion(bootVersion: string): string {
+  const major = parseInt(bootVersion.split(".")[0], 10);
+  const minor = parseInt(bootVersion.split(".")[1], 10);
+  if (major === 2 && minor === 7) return "2021.0.5";
+  if (major === 3 && minor === 0) return "2022.0.5";
+  if (major === 3 && minor >= 2) return "2023.0.3";
+  return "2021.0.5";
+}
+
+function resolveSpringCloudAlibabaVersion(bootVersion: string): string {
+  const major = parseInt(bootVersion.split(".")[0], 10);
+  const minor = parseInt(bootVersion.split(".")[1], 10);
+  if (major === 2 && minor === 7) return "2021.0.6.0";
+  if (major === 3 && minor === 0) return "2022.0.0.0";
+  if (major === 3 && minor >= 2) return "2023.0.1.2";
+  return "2021.0.6.0";
 }
 
 function replacePlaceholders(templateDir: string, config: ProjectConfig): void {
@@ -102,6 +150,8 @@ function replacePlaceholders(templateDir: string, config: ProjectConfig): void {
     ["__PROJECT_NAME__", config.projectName],
     ["__JAVA_VERSION__", config.javaVersion],
     ["__BOOT_VERSION__", config.bootVersion],
+    ["__SPRING_CLOUD_VERSION__", resolveSpringCloudVersion(config.bootVersion)],
+    ["__SPRING_CLOUD_ALIBABA_VERSION__", resolveSpringCloudAlibabaVersion(config.bootVersion)],
   ];
 
   walkDir(templateDir, (filePath) => {

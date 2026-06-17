@@ -1,6 +1,7 @@
 import * as p from "@clack/prompts";
 import { validateKebabCase, validateJavaPackage } from "./utils.js";
 import type { InitializrData } from "./initializr.js";
+import type { TemplateMeta } from "./downloader.js";
 
 export interface ProjectConfig {
   projectName: string;
@@ -14,28 +15,7 @@ export interface ProjectConfig {
   outputDir: string;
 }
 
-const MODULE_OPTIONS = [
-  { value: "adapter", label: "adapter (Web层/Controller)", default: true },
-  { value: "app", label: "app (应用服务层)", default: true },
-  { value: "client", label: "client (客户端DTO/接口)", default: true },
-  { value: "domain", label: "domain (领域层)", default: true },
-  { value: "infrastructure", label: "infrastructure (基础设施层)", default: true },
-  { value: "start", label: "start (启动模块)", default: true },
-  { value: "generator", label: "generator (代码生成器)", default: false },
-] as const;
-
-const BUILTIN_DEPS = [
-  { id: "mybatis-plus", name: "MyBatis-Plus + Druid + MySQL", description: "MyBatis-Plus 持久层 + Druid 连接池 + MySQL 驱动", default: true },
-  { id: "redis", name: "Redis", description: "Redis 缓存支持", default: true },
-  { id: "elasticsearch", name: "Elasticsearch", description: "Elasticsearch 搜索引擎", default: false },
-  { id: "dubbo", name: "Dubbo", description: "Apache Dubbo RPC 框架", default: false },
-  { id: "rocketmq", name: "RocketMQ", description: "RocketMQ 消息队列", default: false },
-  { id: "xxl-job", name: "XXL-Job", description: "XXL-Job 分布式任务调度", default: false },
-  { id: "easyexcel", name: "EasyExcel", description: "EasyExcel 表格处理", default: false },
-  { id: "springdoc", name: "SpringDoc OpenAPI", description: "SpringDoc OpenAPI 接口文档", default: true },
-] as const;
-
-export async function promptProjectConfig(initializrData: InitializrData): Promise<ProjectConfig> {
+export async function promptProjectConfig(initializrData: InitializrData, meta: TemplateMeta): Promise<ProjectConfig> {
   const projectName = await p.text({
     message: "项目名称",
     placeholder: "my-service",
@@ -87,24 +67,34 @@ export async function promptProjectConfig(initializrData: InitializrData): Promi
   });
   if (p.isCancel(javaVersion)) process.exit(0);
 
+  const moduleOptions = Object.entries(meta.modules).map(([key, val]) => ({
+    value: key,
+    label: `${key} (${val.description})`,
+  }));
+  const defaultModules = Object.entries(meta.modules)
+    .filter(([, val]) => val.default)
+    .map(([key]) => key);
+
   const modules = await p.multiselect({
     message: "选择 COLA 模块",
-    options: MODULE_OPTIONS.map((m) => ({
-      value: m.value,
-      label: m.label,
-    })),
-    initialValues: MODULE_OPTIONS.filter((m) => m.default).map((m) => m.value),
+    options: moduleOptions,
+    initialValues: defaultModules,
     required: true,
   });
   if (p.isCancel(modules)) process.exit(0);
 
+  const depOptions = Object.entries(meta.dependencies).map(([key, val]) => ({
+    value: key,
+    label: `${key} - ${val.description}`,
+  }));
+  const defaultDeps = Object.entries(meta.dependencies)
+    .filter(([, val]) => val.default)
+    .map(([key]) => key);
+
   const deps = await p.multiselect({
     message: "选择依赖",
-    options: BUILTIN_DEPS.map((d) => ({
-      value: d.id,
-      label: `${d.name} - ${d.description}`,
-    })),
-    initialValues: BUILTIN_DEPS.filter((d) => d.default).map((d) => d.id),
+    options: depOptions,
+    initialValues: defaultDeps,
     required: false,
   });
   if (p.isCancel(deps)) process.exit(0);

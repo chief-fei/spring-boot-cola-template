@@ -7,7 +7,31 @@ const REPO = "chief-fei/spring-boot-cola-template";
 const TEMPLATE_SUBDIR = "template";
 const BRANCH = "feat/cola-cli";
 
-export async function downloadTemplate(): Promise<string> {
+export interface TemplateModule {
+  description: string;
+  default: boolean;
+  required: boolean;
+}
+
+export interface TemplateDependency {
+  description: string;
+  default: boolean;
+}
+
+export interface TemplateMeta {
+  name: string;
+  version: string;
+  modules: Record<string, TemplateModule>;
+  dependencies: Record<string, TemplateDependency>;
+  fileMapping: Record<string, string>;
+}
+
+export interface DownloadResult {
+  templateDir: string;
+  meta: TemplateMeta;
+}
+
+export async function downloadTemplate(): Promise<DownloadResult> {
   const tmpDir = path.join(os.tmpdir(), `cola-template-${Date.now()}`);
   fs.mkdirSync(tmpDir, { recursive: true });
 
@@ -18,5 +42,9 @@ export async function downloadTemplate(): Promise<string> {
   });
 
   await emitter.clone(tmpDir);
-  return tmpDir;
+
+  const metaPath = path.join(tmpDir, "template.json");
+  const meta: TemplateMeta = JSON.parse(fs.readFileSync(metaPath, "utf-8"));
+
+  return { templateDir: tmpDir, meta };
 }

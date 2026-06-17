@@ -1,12 +1,36 @@
 import fs from "node:fs";
 import path from "node:path";
 import * as p from "@clack/prompts";
-import { downloadTemplate } from "./downloader.js";
+import { downloadTemplate, type TemplateMeta } from "./downloader.js";
 import { processTemplate } from "./processor.js";
-import { rmDir } from "./utils.js";
+import { rmDir, walkDir } from "./utils.js";
 import type { ProjectConfig } from "./prompts.js";
 
-export async function generate(config: ProjectConfig): Promise<string> {
+const GITIGNORE_CONTENT = `# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Build
+target/
+*.class
+*.jar
+*.war
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Maven
+.mvn/
+`;
+
+export async function generate(config: ProjectConfig, meta: TemplateMeta): Promise<string> {
   const outputDir = path.resolve(config.outputDir);
   const projectDir = path.join(outputDir, config.projectName);
 
@@ -25,12 +49,12 @@ export async function generate(config: ProjectConfig): Promise<string> {
   const s = p.spinner();
 
   s.start("下载模板中...");
-  const templateDir = await downloadTemplate();
+  const { templateDir } = await downloadTemplate();
   s.stop("模板下载完成");
 
   s.start("处理模板中...");
-  processTemplate(templateDir, config);
-  cleanupTemplate(templateDir);
+  processTemplate(templateDir, config, meta);
+  cleanupTemplate(templateDir, config);
   s.stop("模板处理完成");
 
   s.start("生成项目中...");
@@ -41,16 +65,29 @@ export async function generate(config: ProjectConfig): Promise<string> {
   return projectDir;
 }
 
-function cleanupTemplate(templateDir: string): void {
-  const filesToRemove = ["create.sh", ".gitignore", ".DS_Store"];
+export function cleanupTemplate(templateDir: string, config: ProjectConfig): void {
+  const filesToRemove = [".gitignore", "template.json", ".DS_Store"];
   for (const file of filesToRemove) {
     const filePath = path.join(templateDir, file);
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
     }
   }
-  const templateJson = path.join(templateDir, "template.json");
-  if (fs.existsSync(templateJson)) {
-    fs.unlinkSync(templateJson);
+
+  const imlFile = path.join(templateDir, `${config.artifactId}.iml`);
+  if (fs.existsSync(imlFile)) {
+    fs.unlinkSync(imlFile);
   }
+
+  // 清理所有残留的 .iml 文件（包括未替换占位符的）
+  walkDir(templateDir, (filePath) => {
+    if (filePath.endsWith(".iml")) {
+      fs.unlinkSync(filePath);
+    }
+  });
+
+  const ideaDir = path.join(templateDir, ".idea");
+  rmDir(ideaDir);
+
+  fs.writeFileSync(path.join(templateDir, ".gitignore"), GITIGNORE_CONTENT, "utf-8");
 }

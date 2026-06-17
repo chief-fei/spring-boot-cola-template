@@ -7,17 +7,9 @@ export interface VersionOption {
   name: string;
 }
 
-export interface DependencyOption {
-  id: string;
-  name: string;
-  description: string;
-  group: string;
-}
-
 export interface InitializrData {
   bootVersions: VersionOption[];
   javaVersions: VersionOption[];
-  dependencies: DependencyOption[];
 }
 
 const FALLBACK_DATA: InitializrData = {
@@ -31,14 +23,6 @@ const FALLBACK_DATA: InitializrData = {
     { id: "11", name: "11" },
     { id: "17", name: "17" },
     { id: "21", name: "21" },
-  ],
-  dependencies: [
-    { id: "mybatis", name: "MyBatis", description: "MyBatis 持久层框架", group: "数据库" },
-    { id: "mysql", name: "MySQL", description: "MySQL 数据库驱动", group: "数据库" },
-    { id: "data-redis", name: "Redis", description: "Redis 缓存", group: "中间件" },
-    { id: "data-elasticsearch", name: "Elasticsearch", description: "Elasticsearch 搜索引擎", group: "中间件" },
-    { id: "rocketmq", name: "RocketMQ", description: "RocketMQ 消息队列", group: "中间件" },
-    { id: "kafka", name: "Kafka", description: "Apache Kafka 消息系统", group: "中间件" },
   ],
 };
 
@@ -56,7 +40,6 @@ interface HalGroup {
 interface HalResponse {
   bootVersion?: { values: HalValue[]; default: string };
   javaVersion?: { values: HalValue[]; default: string };
-  dependencies?: { values: HalGroup[] };
 }
 
 export async function fetchInitializrData(): Promise<InitializrData> {
@@ -74,21 +57,7 @@ export async function fetchInitializrData(): Promise<InitializrData> {
     const javaVersions: VersionOption[] =
       data.javaVersion?.values?.map((v) => ({ id: v.id, name: v.name })) ?? FALLBACK_DATA.javaVersions;
 
-    const dependencies: DependencyOption[] = [];
-    if (data.dependencies?.values) {
-      for (const group of data.dependencies.values) {
-        for (const dep of group.values) {
-          dependencies.push({
-            id: dep.id,
-            name: dep.name,
-            description: dep.description ?? dep.name,
-            group: group.name,
-          });
-        }
-      }
-    }
-
-    return { bootVersions, javaVersions, dependencies: dependencies.length > 0 ? dependencies : FALLBACK_DATA.dependencies };
+    return { bootVersions, javaVersions };
   } catch {
     return FALLBACK_DATA;
   }

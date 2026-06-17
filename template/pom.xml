@@ -17,11 +17,11 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <spring-boot.version>__BOOT_VERSION__</spring-boot.version>
-        <spring-cloud.version>2021.0.5</spring-cloud.version>
-        <spring-cloud-alibaba.version>2021.0.6.0</spring-cloud-alibaba.version>
+        <spring-cloud.version>__SPRING_CLOUD_VERSION__</spring-cloud.version>
+        <spring-cloud-alibaba.version>__SPRING_CLOUD_ALIBABA_VERSION__</spring-cloud-alibaba.version>
 
         <cola.version>4.3.2</cola.version>
-        <!-- @dep mybatis-plus -->
+        <!-- @dep mybatis-plus,generator -->
         <mybatis-plus.version>3.5.7</mybatis-plus.version>
         <druid.version>1.2.23</druid.version>
         <mysql.version>8.0.33</mysql.version>
@@ -95,7 +95,7 @@
                 <version>${cola.version}</version>
             </dependency>
 
-            <!-- @dep mybatis-plus -->
+            <!-- @dep mybatis-plus,generator -->
             <dependency>
                 <groupId>com.baomidou</groupId>
                 <artifactId>mybatis-plus-boot-starter</artifactId>
