@@ -20,7 +20,7 @@ const config = {
   packageName: "com.example.demo",
   bootVersion: "2.7.18",
   javaVersion: "1.8",
-  modules: ["adapter", "app", "client", "domain", "infrastructure", "start"],
+  modules: ["adapter", "app", "client", "domain", "infrastructure", "start", "generator"],
   dependencies: ["mybatis-plus", "redis", "springdoc"],
   outputDir: outputDir,
 };

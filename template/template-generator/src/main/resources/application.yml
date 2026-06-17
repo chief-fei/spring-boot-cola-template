@@ -1,4 +1,6 @@
 spring:
+  config:
+    import: file:../__ARTIFACT_ID__-start/src/main/resources/application.yml
   main:
     web-application-type: none
 

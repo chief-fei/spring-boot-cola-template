@@ -13,4 +13,5 @@ public class GeneratorProperties {
     private String author = "generator";
     private boolean fileOverride = false;
     private String[] tablePrefixes = {"t_", "tbl_"};
+    private String table;
 }
